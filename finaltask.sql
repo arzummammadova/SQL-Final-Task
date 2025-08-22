@@ -26,21 +26,21 @@ select * from employees where salary<20000 order by salary desc fetch first 5 ro
 
 
 
---7Employees cədvəlində maaşı 7000 dən çox olan və department_id- i 50, 60 və ya 80 olan əməkdaşları gətirin.
---İN istifadə olunmasın. 
+--7Employees c?dv?lind? maa?? 7000 d?n çox olan v? department_id- i 50, 60 v? ya 80 olan ?m?kda?lar? g?tirin.
+--?N istifad? olunmas?n. 
 
 select * from employees where salary>7000 and (department_id=50 or department_id=60 or department_id=80)
 
 
 
---8Employees cədvəlində əməkdaşların adını, soyadını, commission_pct, phone_number və department_name gətirin.
---Phone_number-də ‘.’ –i ‘–‘ lə əvəz edin. Commission_pct-də null olanlar ilk gəlsin. 
+--8Employees c?dv?lind? ?m?kda?lar?n ad?n?, soyad?n?, commission_pct, phone_number v? department_name g?tirin.
+--Phone_number-d? ‘.’ –i ‘–‘ l? ?v?z edin. Commission_pct-d? null olanlar ilk g?lsin. 
 
 select first_name,last_name,commission_pct,replace(phone_number,'.','-') from employees order by  commission_pct
 nulls first 
 
---9Employees cədvəlində əməkdaşalrın adını, soyadını, maaşını və maaşın çoxdan aza doğru sıra nömrəsini gətirin. 
---Eyni maaşda olanlara eyni sıra nömeəsi yazılsın. 
+--9Employees c?dv?lind? ?m?kda?alr?n ad?n?, soyad?n?, maa??n? v? maa??n çoxdan aza do?ru s?ra nömr?sini g?tirin. 
+--Eyni maa?da olanlara eyni s?ra nöme?si yaz?ls?n. 
 
 select first_name,last_name,salary,
 dense_rank() over(order by salary desc) as rankk
@@ -49,9 +49,89 @@ from employees order by salary desc
 
 
 
---10Employees cədvəlində maaşı 10000 dən çox olan və şəhəri 
---Oxford olan əməkdaşların adını, maaşını, department_id-i, department_name-i və şəhər adını gətirin. 
+--10Employees c?dv?lind? maa?? 10000 d?n çox olan v? ??h?ri 
+--Oxford olan ?m?kda?lar?n ad?n?, maa??n?, department_id-i, department_name-i v? ??h?r ad?n? g?tirin. 
 select e.first_name,e.salary,e.department_id,d.department_name ,l.city from employees e
 join  departments d  on e.department_id=d.department_id 
 join locations l on l.location_id=d.location_id where e.salary>10000
+
+
+
+--11.Employees cədvəlində sırası 20 və 40 arasında əməkdaşalrın adını, soyadını və sıra nömrəsini yazın. 
+select  first_name,last_name,rankk 
+from (select first_name,last_name, rank() over(order by department_id desc) as rankk
+from employees) t
+
+
+where rankk between  20 and 40
+
+
+--12 Employees cədvəlində ən çox maaş alan 5 ci əməkdaşı tapın. 
+--Maaşdan asılı olmayaraq hər sıraya 1 nömrə versin. 
+
+
+select first_name,last_name,salary ,
+row_number() over(order by salary desc) as rn
+from employees where  rownum<=5
+
+--13Employees cədvəlində ən çox maaş alan 5 ci əməkdaşı tapın.
+--Eyni maaşda olanlara eyni sıra nömrəsi verilsin. 
+select first_name,last_name,salary,
+dense_rank() over(order by salary desc) as rn 
+from employees
+where rownum<=5
+
+
+--14Employees cədvəlində employee_id – i cüt olan və adında sondan ikinci hərfi a olan və manager_id –i 
+--145, 146 və ya  147 olan əməkdaşları gətirin. Sıralama maaşa görə çoxdan aza doğru olsun. 
+select first_name,employee_id  from employees where manager_id in(145,146,147)  and mod(employee_id,2)=0
+and first_name like '%a_'
+
+
+--15 Employees cədvəlində adında 3
+--cü hərfi a olan və soyadında sondan 3 cü hərfi y olan əməkdaşları gətirin. 
+
+select * from employees where first_name like  '__a%' 
+and last_name like '%y__'
+
+
+--16 Employees cədvəlində alt sorğu vasitəsilə əməkdaşların ad və soyadın birləşməsinin 
+--uzunluqları cəmini, ortalamsını, ən az olanı və ən çox olanı tapın. 
+
+
+select sum(lenght),
+avg(lenght),
+min(lenght),
+max(lenght)
+from (
+select length(first_name || ' ' || last_name) as lenght from employees
+)
+
+
+
+--17Employees cədvəlində əməkdaşalrın adını, soyadını, təcrübələrini gün ilə,
+--təcrübələrini ay ilə və təcrübələrini il ilə gətirin. 
+
+select first_name,last_name,months_between(sysdate,hire_date) as month,months_between(sysdate,hire_date)/12 as year from employees
+
+--18.Employees cədvəlində əməkdaşalrın adını, soyadını, maaşını, komissiyasını və 
+--komissiyanın maaşa əlavəsini gətirin. Yeni maaşı 15000 dən çox olanları göstərin. 
+select first_name,last_name ,newsal from(
+
+
+select first_name,last_name,salary,commission_pct,salary+commission_pct as  newsal from employees ) t
+where newsal>15000
+
+--19 Employees cədvəlində təcrübəsi 10 ildən 
+--çox olan əməkdaşlara maşının 1.5 qatı miqdarında bonus hesablayın. 
+select salary*1.5 as salaryy from (
+select salary, months_between(sysdate,hire_date)/12 as il  from employees ) t
+where il>10
+
+--20 Maaşı 10000 dən çox olan və şəhəri Seattle, Oxford və ya London olan əməkdaşların 
+--ad və soyadını bir sütunda, maaşını, department_adını, şəhərini və küçə adresini gətirin. 
+select first_name,last_name,salary,d.department_name,c.city from employees e
+join departments d on e.department_id=d.department_id
+join locations  c on c.location_id=d.location_id
+where salary>10000 and c.city in ('Seattle','Oxford','London')
 
