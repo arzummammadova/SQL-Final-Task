@@ -1,0 +1,122 @@
+--1.	Adında ‘A’ və ya ‘a’ olan əməkdaşların employees cədvəlindən bütün 
+--sütunları və department adını gətirən sorğunu yazın. 
+select e.*,d.department_name from employees e
+join departments d on e.department_id=d.department_id
+where e.first_name like '%a%' or e.first_name like '%A%'
+
+
+--2.	Employees cədvəlində hər maaşdan neçə ədəd olduğunu və onların cəmini gətirən sorğunu yazın. 
+select count(*),salary ,sum(salary)
+from employees group by salary
+order by salary desc
+
+
+--3.3.	2007 - ci ildə (SQL live üçün 2015) işə girən əməkdaşalrın adını, soyadını,
+--şəhərini və işə giriş tarixini gətirən sorğunu yazın. 
+
+--select * from locations
+select first_name,last_name, to_char(hire_date,'mm-dd-yyyy') as datee,l.city from employees e
+join departments d on e.department_id=d.department_id
+join  locations  l on d.location_id=l.location_id
+where to_char(hire_date,'yyyy')=2007
+
+
+
+--4.	Employees cədvəlində maaşı əməkdaş Adam-ın maaşı ilə 
+--əməkdaş Lex-in maaşı arasında olan (sərhədlər daxil) əməkdaşları tapın. 
+
+
+select * from employees
+where salary between (select salary from employees where lower(first_name)='adam') and
+(select salary from employees where lower(first_name)='Lex')
+
+
+--5.	Department adına görə əməkdaşları qruplaşdırın. 
+--2007 – ci ildən daha əvvəl (SQL live üçün 2018) işə qəbul olanları gətirən sorğunu yazın.
+--5 və daha çox əməkdaşı olan department adları gəlsin. Çoxdan aza doğru sıralansın.
+
+select d.department_name,
+count(*) as countt
+
+from employees e
+join departments d on d.department_id=e.department_id
+where to_char(hire_date,'yyyy')<2007
+group by d.department_name
+having count(*)>=5
+order by countt desc
+
+
+--6.	Ortalama maaşdan daha artıq maaş alan əməkdaşların ilk 20 % - i gətirən sorğunu yazın. 
+
+select * from (
+select e.*,avg(salary) over () as avg_salry,
+percent_rank() over(order by salary desc)as percentt
+from employees e
+)sub
+where salary>avg_salry
+and percentt<=0.2
+
+
+
+--7.	Heç bir işçi olmayan department adlarını tapın. Əməkdaş adı və department adı sütunu gəlsin.
+--Əməkdaş adı sütununda null əvəzinə ‘Vakansiya’ yazılsın. Department adları hamısı böyük yazılsın. 
+
+select nvl(e.first_name,'Vakansiya') as employees_name ,
+upper(d.department_name) as department_nam 
+from departments d
+left join employees e on d.department_id=e.department_id
+where e.employee_id is null
+
+
+--8.	Employees cədvəlində maaşları 3 hissəyə ayıraraq saylarını tapın. Nümunəni analiz edin.
+select case
+          when salary<=5000 then '<=5k'
+          when salary>5000 and salary<=1000 then '5-10k'
+          else '>10k'
+        end as band,
+    count(*) as say 
+from employees
+group by case 
+ when salary<=5000 then '<=5k'
+          when salary>5000 and salary<=1000 then '5-10k'
+          else '>10k'
+        end 
+order by case band
+
+
+
+--9.	Employees cədvəlində hər manager_id -in qarşısında işçilərini arasında vergül olmaqla
+--(maaşa görə azdan çoxa doğru sıralansın) və hər manager_id-də olan ortalama maaşı yazın. 
+select manager_id ,
+listagg(first_name || ' ' || last_name,',') within group(order by salary desc) as employees_list_name,
+round(avg(salary),2) as avgg
+from employees 
+group by manager_id 
+order by  manager_id
+
+--10.	Ümumi işçilərin ortalama maaşından daha çox ortalama maaş alan department adlarını tapan sorğunu yazın. 
+
+select d.department_name from employees e
+join departments d on e.department_id=d.department_id
+group by d.department_name 
+having avg(e.salary)>(select avg(salary) from employees)
+
+
+--11.	Employees сədvəlində iş stajı 10 ildən az olanlara 500 azn bonus, 10 və
+--20 il arasında olanlara 1000 azn və 20 ildən çox olanlara isə 1500 azn bonus təyin edən sorğunu yazın. 
+select first_name,last_name,hire_date,salary,
+to_char(sysdate,'yyyy')-to_char(hire_date,'yyyy') as il,
+--salary +
+case when to_char(sysdate,'yyyy')-to_char(hire_date,'yyyy')<10 then 500
+ when  to_char(sysdate,'yyyy')-to_char(hire_date,'yyyy') between 10 and 20  then 1000
+ when to_char(sysdate,'yyyy')-to_char(hire_date,'yyyy')>20 then 1500
+else salary
+end as result
+from employees
+
+
+
+--12.	Emplyees cədvəlinin bütün datalarından ibarət emp_dummy adlı cədvəl yaradın. 
+--Sonra isə cədvəli saxlayıb, Lakin bütün dataları silən kodu yazın. 
+create table emp_dummy as select * from employees
+truncate table emp_dummy
