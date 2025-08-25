@@ -83,6 +83,8 @@ group by case
         end 
 order by case band
 
+bunu deyismek
+
 
 
 --9.	Employees cədvəlində hər manager_id -in qarşısında işçilərini arasında vergül olmaqla
